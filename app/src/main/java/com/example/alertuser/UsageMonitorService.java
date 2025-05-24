@@ -33,7 +33,14 @@ public class UsageMonitorService extends Service {
 
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         timerLimit = prefs.getInt("TIMER_MINUTES", 15);  // default to 15 if not set
+        boolean isTimerEnabled = prefs.getBoolean("timer_enabled", true); // default is true
         //timerLimit = intent.getIntExtra("TIMER_MINUTES", 1);
+
+        if (!isTimerEnabled) {
+            stopForeground(true); // remove notification
+            stopSelf(); // stop service
+            return START_NOT_STICKY; // Don't proceed with time checking
+        }
 
         handler = new Handler();
 
