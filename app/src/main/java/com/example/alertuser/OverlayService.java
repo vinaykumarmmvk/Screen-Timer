@@ -29,7 +29,15 @@ public class OverlayService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        showPopup();
+
+        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        Boolean timerFlag = prefs.getBoolean("timer_enabled", true);
+
+        if (timerFlag)
+            showPopup();
+        else
+            stopSelf(); // stop service if not showing popup
+
         return START_NOT_STICKY;
     }
 
@@ -54,10 +62,13 @@ public class OverlayService extends Service {
         String currDate = String.valueOf(LocalDate.now());
         String prevDate = prefs.getString("prevDate", currDate) ;
 
-        if (!prevDate.equals(currDate))
+        if (!prevDate.equals(currDate)) {
             prefs.edit().putInt("count", 0).apply();
-        else
+            count = 0;
+        }
+        else {
             prefs.edit().putInt("count", count).apply();
+        }
 
         prefs.edit().putString("prevDate", currDate).apply();
 

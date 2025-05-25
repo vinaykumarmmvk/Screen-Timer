@@ -38,21 +38,21 @@ public class MainActivity extends AppCompatActivity {
         int currTimer = prefs.getInt("TIMER_MINUTES", 0);
         SharedPreferences.Editor editor = prefs.edit();
 
-        textViewTimer.setText(currTimer + " minutes");
         if (timerFlag) {
             switchTimer.setChecked(true);
             switchTimer.setText("Enable Timer");
             startStopButton.setText("Start");
+            textViewTimer.setText(currTimer + " minutes");
         } else {
             switchTimer.setChecked(false);
             switchTimer.setText("Disable Timer");
             startStopButton.setText("Stop");
+            textViewTimer.setText(" - ");
         }
 
         // Save the switch state to SharedPreferences
         switchTimer.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            editor.putBoolean("timer_enabled", isChecked);
-            editor.apply();
+
             timerFlag = isChecked;
 
             if (isChecked) {
@@ -81,16 +81,20 @@ public class MainActivity extends AppCompatActivity {
             int minutes = 0;
 
             if (timerFlag && !timerEditText.getText().toString().isEmpty()) {
+                stopService(intent);
                 minutes = Integer.parseInt(timerEditText.getText().toString());
                 editor.putInt("TIMER_MINUTES", minutes).apply();
                 textViewTimer.setText(minutes + " minute/s");
+                editor.putBoolean("timer_enabled", true).apply();
                 startForegroundService(intent);
             }
 
             if (!timerFlag) {
                 textViewTimer.setText(" - ");
+                editor.putBoolean("timer_enabled", false).apply();
                 stopService(intent);
             }
+
         });
 
         TextView aboutDeveloper = findViewById(R.id.aboutDeveloper);

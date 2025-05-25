@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -36,6 +37,8 @@ public class UsageMonitorService extends Service {
         boolean isTimerEnabled = prefs.getBoolean("timer_enabled", true); // default is true
         //timerLimit = intent.getIntExtra("TIMER_MINUTES", 1);
 
+        Log.d("OverlayService", "Timer limit set to: " + timerLimit + " minutes");
+
         if (!isTimerEnabled) {
             stopForeground(true); // remove notification
             stopSelf(); // stop service
@@ -59,23 +62,39 @@ public class UsageMonitorService extends Service {
     }
 
     private void startTimer() {
+        if (handler != null && usageCheckRunnable != null) {
+            handler.removeCallbacks(usageCheckRunnable); // Remove previous one
+            usageCheckRunnable = null;
+        }
+
+        handler = new Handler();
+        startTime = System.currentTimeMillis();
+
         usageCheckRunnable = new Runnable() {
             @Override
             public void run() {
                 if (isScreenOn) {
-                    screenOnTime += 1000;
 
-                    if (screenOnTime >= (timerLimit * 60 * 1000)) {
-                        // Reset for next cycle
-                        screenOnTime = 0;
+                    screenOnTime += 1000;
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    long elapsedMinutes = elapsedTime / (1000 * 60);
+
+                    Log.d("OverlayService", "Elapsed time: " + elapsedMinutes + " minutes (Limit: " + timerLimit + ")");
+
+                    if (elapsedMinutes >= timerLimit) {
 
                         // Show overlay popup
                         Intent overlayIntent = new Intent(UsageMonitorService.this, OverlayService.class);
                         overlayIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startService(overlayIntent);
+
+                        // Reset timer
+                        startTime = System.currentTimeMillis();
                     }
+                    handler.postDelayed(this, 1000); // Check every second
                 }
-                handler.postDelayed(this, 1000);
+                else
+                    handler.postDelayed(this, 1000);
             }
         };
         handler.post(usageCheckRunnable);
@@ -89,6 +108,11 @@ public class UsageMonitorService extends Service {
                     isScreenOn = false;
                 } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
                     isScreenOn = true;
+                    startTime = System.currentTimeMillis(); // Restart timer
+                    // Restart the handler loop
+                    if (handler != null && usageCheckRunnable != null) {
+                        handler.post(usageCheckRunnable);
+                    }
                 }
             }
         };
@@ -108,6 +132,29 @@ public class UsageMonitorService extends Service {
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(serviceChannel);
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        // Clean up the broadcast receiver
+        if (screenReceiver != null) {
+            try {
+                unregisterReceiver(screenReceiver);
+            } catch (IllegalArgumentException e) {
+                Log.w("UsageMonitorService", "Receiver not registered: " + e.getMessage());
+            }
+            screenReceiver = null;
+        }
+
+        // Also stop the handler callback
+        if (handler != null && usageCheckRunnable != null) {
+            handler.removeCallbacks(usageCheckRunnable);
+            usageCheckRunnable = null;
+        }
+
+        Log.d("UsageMonitorService", "Service destroyed and receiver unregistered");
     }
 
     @Nullable
