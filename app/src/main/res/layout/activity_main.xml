@@ -89,11 +89,12 @@
         <Button
         android:id="@+id/startStopButton"
         android:text="Start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+            android:background="@drawable/round_button"
         android:backgroundTint="#807979"
             android:padding="15dp"
-            android:textSize="22dp"/>
+            android:textSize="25dp"/>
 
 
     </LinearLayout>
