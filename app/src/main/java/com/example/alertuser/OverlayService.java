@@ -63,8 +63,8 @@ public class OverlayService extends Service {
         String prevDate = prefs.getString("prevDate", currDate) ;
 
         if (!prevDate.equals(currDate)) {
-            prefs.edit().putInt("count", 0).apply();
-            count = 0;
+            prefs.edit().putInt("count", 1).apply();
+            count = 1;
         }
         else {
             prefs.edit().putInt("count", count).apply();

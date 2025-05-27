@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -86,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 editor.putInt("TIMER_MINUTES", minutes).apply();
                 textViewTimer.setText(minutes + " minute/s");
                 editor.putBoolean("timer_enabled", true).apply();
+                Toast.makeText(getApplicationContext(), "Notify screen timer enabled!", Toast.LENGTH_LONG).show();
                 startForegroundService(intent);
             }
 
@@ -93,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 textViewTimer.setText(" - ");
                 editor.putBoolean("timer_enabled", false).apply();
                 stopService(intent);
+                Toast.makeText(getApplicationContext(), "Notify screen timer disabled!", Toast.LENGTH_LONG).show();
             }
 
         });

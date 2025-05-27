@@ -92,7 +92,7 @@
         android:layout_width="110dp"
         android:layout_height="110dp"
             android:background="@drawable/round_button"
-        android:backgroundTint="#807979"
+        android:backgroundTint="#7A5A5A"
             android:padding="15dp"
             android:textSize="25dp"/>
 
