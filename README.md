@@ -1,4 +1,4 @@
-# AlertUserApp
+# Screen Timer App
 Code for your Android Java app that does the following:
 
 Lets the user set a time limit (e.g., 15 minutes).
