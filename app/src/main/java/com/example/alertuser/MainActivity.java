@@ -1,27 +1,121 @@
 package com.example.alertuser;
 
+import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.jetbrains.annotations.NotNull;
+
 public class MainActivity extends AppCompatActivity {
-    EditText timerEditText;
-    Button startStopButton;
-    Switch switchTimer;
-    Boolean timerFlag;
-    TextView textViewTimer, aboutDeveloper;
+    EditText timerEditText, etNote;
+    Button btnStart;
+    TextView aboutDeveloper;
+    CheckBox cbAddNote;
+    ImageButton btnInfo;
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.screen_timer_menu, menu);
+        return true; // show the 3-dots
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NotNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            // TODO: open Settings screen or dialog
+            return true;
+        } else if (id == R.id.action_about) {
+
+            LayoutInflater inflater = LayoutInflater.from(this);
+            View dialogView = inflater.inflate(R.layout.dialog_about_app, null);
+
+            AlertDialog aboutAppDialog = new AlertDialog.Builder(this)
+                    .setView(dialogView)
+                    .create();
+
+// Transparent background so our rounded card shows properly
+            if (aboutAppDialog.getWindow() != null) {
+                aboutAppDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            }
+
+            // Close btn
+            Button btnClose = dialogView.findViewById(R.id.btnDialogClose);
+            btnClose.setOnClickListener(v -> aboutAppDialog.dismiss());
+
+            aboutAppDialog.show();
+            return true;
+        }else if (id == R.id.action_developer) {
+
+            LayoutInflater inflater = LayoutInflater.from(this);
+            View dialogView = inflater.inflate(R.layout.dialog_about_developer, null);
+
+            AlertDialog dialog = new AlertDialog.Builder(this)
+                    .setView(dialogView)
+                    .create();
+
+// Transparent background so our rounded card shows properly
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            }
+
+// Close btn
+            Button btnClose = dialogView.findViewById(R.id.btnDialogClose);
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+
+// Contact actions
+            LinearLayout emailChip = dialogView.findViewById(R.id.btnEmail);
+            LinearLayout linkedinChip = dialogView.findViewById(R.id.btnLinkedIn);
+
+// open email app
+            emailChip.setOnClickListener(v -> {
+                Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
+                emailIntent.setData(Uri.parse("mailto:mmvinaykumar.mm@gmail.com"));
+                emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Screen Timer feedback");
+                startActivity(Intent.createChooser(emailIntent, "Send email"));
+            });
+
+// open LinkedIn profile
+            linkedinChip.setOnClickListener(v -> {
+                Intent browserIntent = new Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://www.linkedin.com/in/vinaykumar-mysuru-manjunath-33b522ba/")
+                );
+                startActivity(browserIntent);
+            });
+
+            dialog.show();
+
+            return true;
+        } else if (id == R.id.action_help) {
+            // TODO: show Help
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,43 +123,33 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         timerEditText = findViewById(R.id.editTextTimer);
-        startStopButton = findViewById(R.id.startStopButton);
-        switchTimer = findViewById(R.id.switch_timer);
-        textViewTimer = findViewById(R.id.textViewTimer);
+        btnStart = findViewById(R.id.btnStart);
+        //textViewTimer = findViewById(R.id.textViewTimer);
         aboutDeveloper = findViewById(R.id.aboutDeveloper);
 
+        cbAddNote = findViewById(R.id.cbAddNote);
+        etNote = findViewById(R.id.etNote);
+        btnInfo = findViewById(R.id.btnInfo);
+
+        cbAddNote.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            etNote.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+        });
+
+        btnInfo.setOnClickListener(v -> {
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Add note")
+                    .setMessage("Use this to jot down a quick note that will be saved with your timer (optional).")
+                    .setPositiveButton("OK", null)
+                    .show();
+        });
+
+
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        timerFlag = prefs.getBoolean("timer_enabled", true);
         int currTimer = prefs.getInt("TIMER_MINUTES", 0);
         SharedPreferences.Editor editor = prefs.edit();
 
-        if (timerFlag) {
-            switchTimer.setChecked(true);
-            switchTimer.setText("Enable Timer");
-            startStopButton.setText("Start");
-            textViewTimer.setText(currTimer + " minutes");
-        } else {
-            switchTimer.setChecked(false);
-            switchTimer.setText("Disable Timer");
-            startStopButton.setText("Stop");
-            textViewTimer.setText(" - ");
-        }
+        btnStart.setOnClickListener(v -> {
 
-        // Save the switch state to SharedPreferences
-        switchTimer.setOnCheckedChangeListener((buttonView, isChecked) -> {
-
-            timerFlag = isChecked;
-
-            if (isChecked) {
-                switchTimer.setText("Enable Timer");
-                startStopButton.setText("Start");
-            } else {
-                switchTimer.setText("Disable Timer");
-                startStopButton.setText("Stop");
-            }
-        });
-
-        startStopButton.setOnClickListener(v -> {
             if (!Settings.canDrawOverlays(this)) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                         Uri.parse("package:" + getPackageName()));
@@ -81,65 +165,26 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, UsageMonitorService.class);
             int minutes = 0;
 
-            if (timerFlag && !timerEditText.getText().toString().isEmpty()) {
+            if (!timerEditText.getText().toString().isEmpty()) {
                 stopService(intent);
                 minutes = Integer.parseInt(timerEditText.getText().toString());
                 editor.putInt("TIMER_MINUTES", minutes).apply();
-                textViewTimer.setText(minutes + " minute/s");
+                //textViewTimer.setText(minutes + " minute/s");
                 editor.putBoolean("timer_enabled", true).apply();
                 Toast.makeText(getApplicationContext(), "Notify screen timer enabled!", Toast.LENGTH_LONG).show();
                 startForegroundService(intent);
-            }
-
-            if (!timerFlag) {
-                textViewTimer.setText(" - ");
+                Intent i = new Intent(MainActivity.this, TimerActivity.class);
+                startActivity(i);
+                // optional: animation
+                overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
+            }else {
+                //textViewTimer.setText(" - ");
                 editor.putBoolean("timer_enabled", false).apply();
                 stopService(intent);
-                Toast.makeText(getApplicationContext(), "Notify screen timer disabled!", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Please Enter Timer!", Toast.LENGTH_LONG).show();
             }
 
-        });
 
-        TextView aboutDeveloper = findViewById(R.id.aboutDeveloper);
-        TextView aboutApp = findViewById(R.id.aboutApp);
-
-        aboutDeveloper.setOnClickListener(v -> {
-            final Dialog aboutDevDialog = new Dialog(MainActivity.this);
-            aboutDevDialog.setContentView(R.layout.dialog_about_developer);
-            aboutDevDialog.setCancelable(true);
-
-            ImageView emailIcon = aboutDevDialog.findViewById(R.id.emailIcon);
-            ImageView linkedinIcon = aboutDevDialog.findViewById(R.id.linkedinIcon);
-            Button btnClose = aboutDevDialog.findViewById(R.id.closeButton);
-
-            emailIcon.setOnClickListener(view -> {
-                Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
-                emailIntent.setData(Uri.parse("mailto:mmvinaykumar.mm@gmail.com"));
-                emailIntent.putExtra(Intent.EXTRA_SUBJECT, "App Contact");
-                startActivity(Intent.createChooser(emailIntent, "Send email"));
-            });
-
-            linkedinIcon.setOnClickListener(view -> {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://www.linkedin.com/in/vinaykumar-mysuru-manjunath-33b522ba/"));
-                startActivity(browserIntent);
-            });
-
-            btnClose.setOnClickListener(view -> aboutDevDialog.dismiss());
-
-            aboutDevDialog.show();
-        });
-
-        aboutApp.setOnClickListener(v -> {
-            final Dialog aboutAppDialog = new Dialog(MainActivity.this);
-            aboutAppDialog.setContentView(R.layout.dialog_about_app);
-            aboutAppDialog.setCancelable(true);
-
-            Button btnClose = aboutAppDialog.findViewById(R.id.closeButton);
-
-            btnClose.setOnClickListener(view -> aboutAppDialog.dismiss());
-
-            aboutAppDialog.show();
         });
 
     }

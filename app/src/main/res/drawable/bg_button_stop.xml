@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- PRESSED state -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#CCA253"/> <!-- slightly darker gold -->
+            <corners android:radius="82dp"/>
+            <stroke
+                android:width="1dp"
+                android:color="#802B2B2B"/> <!-- semi-transparent dark stroke -->
+        </shape>
+    </item>
+
+    <!-- DEFAULT state -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#E0CB42"/> <!-- your warm yellow -->
+            <corners android:radius="82dp"/>
+            <stroke
+                android:width="1dp"
+                android:color="#802B2B2B"/> <!-- softer than solid black -->
+        </shape>
+    </item>
+
+</selector>

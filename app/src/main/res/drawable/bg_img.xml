@@ -1,0 +1,19 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Image layer -->
+    <item>
+        <bitmap
+            android:src="@drawable/ic_testtime1"
+            android:gravity="clip_vertical"
+            android:alpha="0.5"/>
+    </item>
+
+    <!-- Top-to-bottom gradient overlay -->
+    <item>
+        <shape>
+            <gradient
+                android:startColor="#80A99595"
+                android:endColor="#009D6464"
+                android:angle="90"/>
+        </shape>
+    </item>
+</layer-list>
