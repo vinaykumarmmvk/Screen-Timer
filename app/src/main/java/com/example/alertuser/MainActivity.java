@@ -42,6 +42,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        getSharedPreferences("app_prefs", MODE_PRIVATE)
+                .edit().putString("last_screen", "MAIN").apply();
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NotNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
@@ -122,6 +129,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Only auto-route when opened from launcher (prevents loops when coming from notifications, etc.)
+        boolean launchedFromLauncher =
+                Intent.ACTION_MAIN.equals(getIntent().getAction()) &&
+                        getIntent().hasCategory(Intent.CATEGORY_LAUNCHER);
+
+        if (launchedFromLauncher) {
+            String last = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .getString("last_screen", "MAIN");
+
+            if ("TIMER".equals(last)) {
+                startActivity(new Intent(this, TimerActivity.class));
+                finish(); // so back won’t return here
+                return;
+            }
+        }
+
         timerEditText = findViewById(R.id.editTextTimer);
         btnStart = findViewById(R.id.btnStart);
         //textViewTimer = findViewById(R.id.textViewTimer);
@@ -165,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, UsageMonitorService.class);
             int minutes = 0;
 
-            if (!timerEditText.getText().toString().isEmpty()) {
+            if (!timerEditText.getText().toString().isEmpty() && !timerEditText.getText().toString().equals("0")) {
                 stopService(intent);
                 minutes = Integer.parseInt(timerEditText.getText().toString());
                 editor.putInt("TIMER_MINUTES", minutes).apply();
@@ -175,12 +198,13 @@ public class MainActivity extends AppCompatActivity {
                 startForegroundService(intent);
                 Intent i = new Intent(MainActivity.this, TimerActivity.class);
                 startActivity(i);
+                finish();
                 // optional: animation
                 overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
             }else {
                 //textViewTimer.setText(" - ");
                 editor.putBoolean("timer_enabled", false).apply();
-                stopService(intent);
+                //stopService(intent);
                 Toast.makeText(getApplicationContext(), "Please Enter Timer!", Toast.LENGTH_LONG).show();
             }
 
