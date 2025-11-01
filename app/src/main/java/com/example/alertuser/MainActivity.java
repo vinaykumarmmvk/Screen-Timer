@@ -2,7 +2,6 @@ package com.example.alertuser;
 
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
-import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -18,9 +17,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 public class MainActivity extends AppCompatActivity {
     EditText timerEditText, etNote;
     Button btnStart;
-    TextView aboutDeveloper;
+    TextView aboutDeveloper, btnMinus, btnPlus;
     CheckBox cbAddNote;
     ImageButton btnInfo;
 
@@ -74,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
             aboutAppDialog.show();
             return true;
-        }else if (id == R.id.action_developer) {
+        } else if (id == R.id.action_developer) {
 
             LayoutInflater inflater = LayoutInflater.from(this);
             View dialogView = inflater.inflate(R.layout.dialog_about_developer, null);
@@ -154,6 +151,34 @@ public class MainActivity extends AppCompatActivity {
         etNote = findViewById(R.id.etNote);
         btnInfo = findViewById(R.id.btnInfo);
 
+        btnMinus = findViewById(R.id.btnMinus);
+        btnPlus = findViewById(R.id.btnPlus);
+
+// init minus button state based on current value
+        updateMinusState(parseTimer());
+
+// + increments
+        btnPlus.setOnClickListener(v -> {
+            int val = parseTimer();
+            if (val < 999) {              // optional upper cap
+                setTimer(val + 1);
+            }
+        });
+
+// − decrements (floor = 1)
+        btnMinus.setOnClickListener(v -> {
+            int val = parseTimer();
+            if (val > 1) {
+                setTimer(val - 1);
+            }
+        });
+
+// If user types manually, keep the minus button state in sync
+        timerEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) updateMinusState(parseTimer());
+        });
+
+
         cbAddNote.setOnCheckedChangeListener((buttonView, isChecked) -> {
             etNote.setVisibility(isChecked ? View.VISIBLE : View.GONE);
         });
@@ -201,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
                 finish();
                 // optional: animation
                 overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
-            }else {
+            } else {
                 //textViewTimer.setText(" - ");
                 editor.putBoolean("timer_enabled", false).apply();
                 //stopService(intent);
@@ -219,4 +244,29 @@ public class MainActivity extends AppCompatActivity {
                 android.os.Process.myUid(), getPackageName());
         return mode == AppOpsManager.MODE_ALLOWED;
     }
+
+    private int parseTimer() {
+        String s = timerEditText.getText().toString().trim();
+        if (s.isEmpty()) return 1;                 // treat empty as 1 for buttons
+        try {
+            int v = Integer.parseInt(s);
+            return Math.max(1, v);                 // clamp to 1 minimum
+        } catch (NumberFormatException e) {
+            return 1;
+        }
+    }
+
+    private void setTimer(int v) {
+        v = Math.max(1, v);
+        timerEditText.setText(String.valueOf(v));
+        timerEditText.setSelection(timerEditText.getText().length());
+        updateMinusState(v);
+    }
+
+    private void updateMinusState(int v) {
+        boolean canDecrement = v > 1;
+        btnMinus.setEnabled(canDecrement);
+        btnMinus.setAlpha(canDecrement ? 1f : 0.4f);   // visual feedback
+    }
+
 }
