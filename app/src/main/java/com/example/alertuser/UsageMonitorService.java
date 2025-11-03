@@ -21,8 +21,8 @@ public class UsageMonitorService extends Service {
 
     private Handler handler;
     private Runnable usageCheckRunnable;
-    private long screenOnTime = 0;
     private boolean isScreenOn = true;
+    private long screenOnTime = 0, lastBroadcastMinute = -1;
     private int timerLimit;
     private long startTime;
     private int exceedCount = 0;
@@ -35,6 +35,7 @@ public class UsageMonitorService extends Service {
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         timerLimit = prefs.getInt("TIMER_MINUTES", 15);  // default to 15 if not set
         boolean isTimerEnabled = prefs.getBoolean("timer_enabled", true); // default is true
+
         //timerLimit = intent.getIntExtra("TIMER_MINUTES", 1);
 
         Log.d("OverlayService", "Timer limit set to: " + timerLimit + " minutes");
@@ -52,8 +53,8 @@ public class UsageMonitorService extends Service {
 
         createNotificationChannel();
         Notification notification = new NotificationCompat.Builder(this, "UsageMonitorChannel")
-                .setContentTitle("Monitoring Usage")
-                .setContentText("App is running in background")
+                .setContentTitle("Monitoring Usage - VINAY")
+                .setContentText("App is running in background - KUMAR")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .build();
         startForeground(1, notification);
@@ -70,57 +71,107 @@ public class UsageMonitorService extends Service {
         handler = new Handler();
         startTime = System.currentTimeMillis();
 
+        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
         usageCheckRunnable = new Runnable() {
             @Override
             public void run() {
-                if (isScreenOn) {
+                SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
 
-                    screenOnTime += 1000;
-                    long elapsedTime = System.currentTimeMillis() - startTime;
-                    long elapsedMinutes = elapsedTime / (1000 * 60);
-
-                    Log.d("OverlayService", "Elapsed time: " + elapsedMinutes + " minutes (Limit: " + timerLimit + ")");
-
-                    if (elapsedMinutes >= timerLimit) {
-
-                        // Show overlay popup
-                        Intent overlayIntent = new Intent(UsageMonitorService.this, OverlayService.class);
-                        overlayIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startService(overlayIntent);
-
-                        // Reset timer
-                        startTime = System.currentTimeMillis();
-                    }
-                    handler.postDelayed(this, 1000); // Check every second
-                }
-                else
+                if (!isScreenOn) {
+                    // While OFF, always enforce zero in storage + UI
+                    editor.putLong("elapsed_time", 0L).putLong("ui_elapsed", 0L).apply();
+                    sendUiTick(0L, timerLimit);
                     handler.postDelayed(this, 1000);
+                    return;
+                }
+
+                // Screen is ON → accumulate
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                long elapsedMinutes = elapsedTime / (1000 * 60);
+
+                Log.d("OverlayService", "Elapsed time: " + elapsedMinutes + " minutes (Limit: " + timerLimit + ")");
+
+                editor.putLong("elapsed_time", elapsedMinutes).apply();
+
+                // Broadcast once per minute (throttled)
+                if (elapsedMinutes != lastBroadcastMinute) {
+                    lastBroadcastMinute = elapsedMinutes;
+                    editor.putLong("ui_elapsed", elapsedMinutes).apply();
+                    sendUiTick(elapsedMinutes, timerLimit);
+                }
+
+                if (elapsedMinutes >= timerLimit) {
+                    // Show overlay popup
+                    Intent overlayIntent = new Intent(UsageMonitorService.this, OverlayService.class);
+                    overlayIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startService(overlayIntent);
+
+                    // Reset timer for the next cycle
+                    startTime = System.currentTimeMillis();
+                    lastBroadcastMinute = -1;
+                    editor.putLong("elapsed_time", 0L).putLong("ui_elapsed", 0L).apply();
+                    sendUiTick(0L, timerLimit);
+                }
+
+                handler.postDelayed(this, 1000);
             }
         };
+
         handler.post(usageCheckRunnable);
     }
 
     private void registerScreenReceiver() {
-        screenReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
-                    isScreenOn = false;
-                } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
-                    isScreenOn = true;
-                    startTime = System.currentTimeMillis(); // Restart timer
-                    // Restart the handler loop
-                    if (handler != null && usageCheckRunnable != null) {
-                        handler.post(usageCheckRunnable);
+            screenReceiver = new BroadcastReceiver() {
+                @Override public void onReceive(Context ctx, Intent intent) {
+                    SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor ed = prefs.edit();
+                    String a = intent.getAction();
+
+                    if (Intent.ACTION_SCREEN_OFF.equals(a)) {
+                        isScreenOn = false;
+
+                        // Reset timer state
+                        startTime = System.currentTimeMillis();   // so next ON starts fresh
+                        lastBroadcastMinute = -1;                 // reset throttle
+                        ed.putBoolean("screen_on", false);
+                        ed.putLong("elapsed_time", 0L);           // true counter reset
+                        ed.putLong("ui_elapsed", 0L);             // UI snapshot = 0
+                        ed.apply();
+
+                        // Push 0 to the Activity immediately
+                        sendUiTick(0L, prefs.getInt("TIMER_MINUTES", 1));
+
+                    } else if (Intent.ACTION_SCREEN_ON.equals(a)) {
+                        isScreenOn = true;
+
+                        // Start fresh from 0 on every screen-on
+                        startTime = System.currentTimeMillis();
+                        lastBroadcastMinute = -1;
+                        ed.putBoolean("screen_on", true);
+                        ed.putLong("elapsed_time", 0L);
+                        ed.putLong("ui_elapsed", 0L);
+                        ed.apply();
+
+                        // Let UI know we’re starting from 0
+                        sendUiTick(0L, prefs.getInt("TIMER_MINUTES", 1));
                     }
                 }
-            }
-        };
+            };
+            IntentFilter f = new IntentFilter();
+            f.addAction(Intent.ACTION_SCREEN_OFF);
+            f.addAction(Intent.ACTION_SCREEN_ON);
+            registerReceiver(screenReceiver, f);
+        }
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_SCREEN_ON);
-        registerReceiver(screenReceiver, filter);
+    private void sendUiTick(long elapsedMinutes, int limitMinutes) {
+        Intent tick = new Intent("com.example.alertuser.USAGE_TICK");
+        tick.setPackage(getPackageName());
+        tick.putExtra("elapsed", elapsedMinutes);
+        tick.putExtra("limit", limitMinutes);
+        sendBroadcast(tick);
     }
 
     private void createNotificationChannel() {

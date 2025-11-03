@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,12 +22,29 @@ import org.jetbrains.annotations.NotNull;
 
 public class TimerActivity extends AppCompatActivity {
     Button btnStop;
+    TextView textViewCurrTimer, textViewScreenTimer, textViewCount;
+    com.google.android.material.progressindicator.CircularProgressIndicator progress;
+
+    private final android.content.BroadcastReceiver usageTickReceiver = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
+            long elapsed = intent.getLongExtra("elapsed", 0L);
+            int limit = intent.getIntExtra("limit", 1);
+            updateTimerUI(elapsed, limit);
+        }
+    };
 
     @Override
     protected void onResume() {
         super.onResume();
         getSharedPreferences("app_prefs", MODE_PRIVATE)
                 .edit().putString("last_screen", "TIMER").apply();
+
+        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        int limit = Math.max(1, prefs.getInt("TIMER_MINUTES", 1));
+        boolean screenOn = prefs.getBoolean("screen_on", true);
+        long uiElapsed = prefs.getLong("ui_elapsed", 0L);
+        // Paint using the snapshot persisted by the service
+        updateTimerUI(screenOn ? uiElapsed : 0L, limit);
     }
 
 
@@ -36,11 +54,21 @@ public class TimerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_timer);  // your second XML
 
         btnStop = findViewById(R.id.btnStop);
+        textViewScreenTimer = findViewById(R.id.textViewScreenTimer);
+        textViewCurrTimer = findViewById(R.id.textViewCurrTimer);
+        textViewCount = findViewById(R.id.textViewCount);
+        progress = findViewById(R.id.progress);
 
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        int currTimer = prefs.getInt("TIMER_MINUTES", 0);
         SharedPreferences.Editor editor = prefs.edit();
 
+        int currTimer = prefs.getInt("TIMER_MINUTES", 0);
+        long elapsedTime = prefs.getLong("elapsed_time", 0);
+
+        //textViewCurrTimer.setText(String.valueOf(elapsedTime));
+        textViewScreenTimer.setText(String.valueOf(currTimer));
+
+        updateTimerUI(elapsedTime, currTimer);
 
         btnStop.setOnClickListener(v -> {
 
@@ -58,6 +86,40 @@ public class TimerActivity extends AppCompatActivity {
         });
 
     }
+
+    @Override protected void onStart() {
+        super.onStart();
+        registerReceiver(usageTickReceiver, new android.content.IntentFilter("com.example.alertuser.USAGE_TICK"));
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
+        try { unregisterReceiver(usageTickReceiver); } catch (Exception ignored) {}
+    }
+
+
+    private void updateTimerUI(long elapsedMinutes, int limitMinutes) {
+        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        int count = prefs.getInt("count", 0);
+
+        // Clamp + avoid divide by zero
+        if (limitMinutes <= 0) limitMinutes = 1;
+
+        // Update "elapsed" text — choose your preferred format ("Xm" or just number)
+        textViewCurrTimer.setText(elapsedMinutes + "min");
+        textViewCount.setText(String.valueOf(count));
+
+        // Compute percent and update progress
+        float pct = (elapsedMinutes * 100f) / limitMinutes;
+        int progressPct = Math.max(0, Math.min(100, Math.round(pct)));
+
+        // Make sure it's determinate and max=100
+        if (progress.isIndeterminate()) progress.setIndeterminate(false);
+        if (progress.getMax() != 100) progress.setMax(100);
+
+        progress.setProgress(progressPct, true); // true = animate
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
