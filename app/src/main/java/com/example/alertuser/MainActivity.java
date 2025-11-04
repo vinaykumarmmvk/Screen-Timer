@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
         //textViewTimer = findViewById(R.id.textViewTimer);
         aboutDeveloper = findViewById(R.id.aboutDeveloper);
 
-        cbAddNote = findViewById(R.id.cbAddNote);
+        cbAddNote = findViewById(R.id.checkBoxAddNote);
         etNote = findViewById(R.id.etNote);
         btnInfo = findViewById(R.id.btnInfo);
 
@@ -197,6 +197,13 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences.Editor editor = prefs.edit();
 
         btnStart.setOnClickListener(v -> {
+
+            if (cbAddNote.isChecked()) {
+                editor.putBoolean("isUserQuote", true).apply();
+                editor.putString("userQuote", etNote.getText().toString()).apply();
+            }
+            else
+                editor.putBoolean("isUserQuote", false).apply();
 
             if (!Settings.canDrawOverlays(this)) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,

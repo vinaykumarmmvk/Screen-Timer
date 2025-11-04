@@ -142,7 +142,7 @@
             android:layout_marginBottom="8dp">
 
             <CheckBox
-                android:id="@+id/cbAddNote"
+                android:id="@+id/checkBoxAddNote"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Add a note (optional)"

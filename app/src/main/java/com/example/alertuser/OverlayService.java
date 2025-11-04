@@ -72,7 +72,11 @@ public class OverlayService extends Service {
 
         prefs.edit().putString("prevDate", currDate).apply();
 
-        quote.setText(getRandomQuote());
+        if(prefs.getBoolean("isUserQuote", false))
+            quote.setText(prefs.getString("userQuote", ""));
+        else
+            quote.setText(getRandomQuote());
+
         message.setText("Limit exceeded " + count + " times");
 
         closeBtn.setOnClickListener(v -> {
