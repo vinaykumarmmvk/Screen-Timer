@@ -56,6 +56,7 @@ public class OverlayService extends Service {
         TextView message = overlayView.findViewById(R.id.messageText);
         TextView quote = overlayView.findViewById(R.id.quoteText);
         Button closeBtn = overlayView.findViewById(R.id.closeButton);
+        Button openAppBtn = overlayView.findViewById(R.id.openAppButton);
 
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         int count = prefs.getInt("count", 0) + 1;
@@ -78,6 +79,25 @@ public class OverlayService extends Service {
             quote.setText(getRandomQuote());
 
         message.setText("Limit exceeded " + count + " times");
+
+        openAppBtn.setOnClickListener(v -> {
+            try {
+                // Launch the main activity of your app
+                Intent launchIntent = new Intent(getApplicationContext(), TimerActivity.class);
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(launchIntent);
+
+                // Close the overlay
+                if (overlayView != null && windowManager != null && overlayView.isAttachedToWindow()) {
+                    windowManager.removeView(overlayView);
+                    overlayView = null;
+                }
+
+                stopSelf(); // stop this overlay service
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
 
         closeBtn.setOnClickListener(v -> {
             try {
