@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.alertuser'
+    namespace 'com.example.screentimer'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.alertuser"
+        applicationId "com.example.screentimer"
         minSdk 24
         targetSdk 35
         versionCode 1

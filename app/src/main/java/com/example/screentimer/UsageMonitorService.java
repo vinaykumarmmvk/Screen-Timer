@@ -1,4 +1,4 @@
-package com.example.alertuser;
+package com.example.screentimer;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

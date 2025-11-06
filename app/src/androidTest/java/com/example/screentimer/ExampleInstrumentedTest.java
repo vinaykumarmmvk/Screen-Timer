@@ -1,4 +1,4 @@
-package com.example.alertuser;
+package com.example.screentimer;
 
 import android.content.Context;
 

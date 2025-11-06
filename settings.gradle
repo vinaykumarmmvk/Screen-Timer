@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Alert User"
+rootProject.name = "ScreenTimer"
 include ':app'
