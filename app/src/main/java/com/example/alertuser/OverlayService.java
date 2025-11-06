@@ -4,9 +4,14 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.IBinder;
-import android.view.*;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -19,7 +24,9 @@ public class OverlayService extends Service {
     private static View overlayView;
 
     @Override
-    public IBinder onBind(Intent intent) { return null; }
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 
     @Override
     public void onCreate() {
@@ -51,8 +58,6 @@ public class OverlayService extends Service {
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         overlayView = inflater.inflate(R.layout.popup_overlay, null);
 
-        //overlayView = LayoutInflater.from(this).inflate(R.layout.popup_overlay, null);
-
         TextView message = overlayView.findViewById(R.id.messageText);
         TextView quote = overlayView.findViewById(R.id.quoteText);
         Button closeBtn = overlayView.findViewById(R.id.closeButton);
@@ -61,24 +66,31 @@ public class OverlayService extends Service {
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         int count = prefs.getInt("count", 0) + 1;
         String currDate = String.valueOf(LocalDate.now());
-        String prevDate = prefs.getString("prevDate", currDate) ;
+        String prevDate = prefs.getString("prevDate", currDate);
 
         if (!prevDate.equals(currDate)) {
             prefs.edit().putInt("count", 1).apply();
             count = 1;
-        }
-        else {
+        } else {
             prefs.edit().putInt("count", count).apply();
         }
 
         prefs.edit().putString("prevDate", currDate).apply();
 
-        if(prefs.getBoolean("isUserQuote", false))
+        if (prefs.getBoolean("isUserQuote", false))
             quote.setText(prefs.getString("userQuote", ""));
         else
             quote.setText(getRandomQuote());
 
         message.setText("Limit exceeded " + count + " times");
+
+        // Play a short beep (200 ms). Use STREAM_NOTIFICATION or STREAM_ALARM.
+        ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80); // volume 0–100
+        tg.startTone(ToneGenerator.TONE_CDMA_ALERT_AUTOREDIAL_LITE, 800);
+
+        // Release a bit later so we don’t leak the ToneGenerator
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(tg::release, 300);
 
         openAppBtn.setOnClickListener(v -> {
             try {

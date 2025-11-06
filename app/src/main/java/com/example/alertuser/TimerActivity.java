@@ -129,10 +129,10 @@ public class TimerActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NotNull MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            // TODO: open Settings screen or dialog
+        /*if (id == R.id.action_settings) {
+            // open Settings screen or dialog
             return true;
-        } else if (id == R.id.action_about) {
+        }*/ if (id == R.id.action_about) {
 
             LayoutInflater inflater = LayoutInflater.from(this);
             View dialogView = inflater.inflate(R.layout.dialog_about_app, null);
@@ -193,9 +193,6 @@ public class TimerActivity extends AppCompatActivity {
 
             dialog.show();
 
-            return true;
-        } else if (id == R.id.action_help) {
-            // TODO: show Help
             return true;
         }
         return super.onOptionsItemSelected(item);

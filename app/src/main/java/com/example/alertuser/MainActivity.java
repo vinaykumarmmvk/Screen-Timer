@@ -48,10 +48,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NotNull MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            // TODO: open Settings screen or dialog
+        /*if (id == R.id.action_settings) {
+            // open Settings screen or dialog
             return true;
-        } else if (id == R.id.action_about) {
+        }*/ if (id == R.id.action_about) {
 
             LayoutInflater inflater = LayoutInflater.from(this);
             View dialogView = inflater.inflate(R.layout.dialog_about_app, null);
@@ -112,9 +112,6 @@ public class MainActivity extends AppCompatActivity {
 
             dialog.show();
 
-            return true;
-        } else if (id == R.id.action_help) {
-            // TODO: show Help
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -186,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
         btnInfo.setOnClickListener(v -> {
             new androidx.appcompat.app.AlertDialog.Builder(this)
                     .setTitle("Add note")
-                    .setMessage("Use this to jot down a quick note that will be saved with your timer (optional).")
+                    .setMessage("By default a set of motivational quotes are shown.\nIf you want a custom message consider adding it in the add note field.")
                     .setPositiveButton("OK", null)
                     .show();
         });

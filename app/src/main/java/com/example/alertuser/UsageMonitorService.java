@@ -53,8 +53,8 @@ public class UsageMonitorService extends Service {
 
         createNotificationChannel();
         Notification notification = new NotificationCompat.Builder(this, "UsageMonitorChannel")
-                .setContentTitle("Monitoring Usage - VINAY")
-                .setContentText("App is running in background - KUMAR")
+                .setContentTitle("Monitoring Screen Usage")
+                .setContentText("Screen timer app is running in background")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .build();
         startForeground(1, notification);
