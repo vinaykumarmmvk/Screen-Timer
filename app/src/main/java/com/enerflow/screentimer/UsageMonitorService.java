@@ -1,4 +1,4 @@
-package com.example.screentimer;
+package com.enerflow.screentimer;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -167,7 +167,7 @@ public class UsageMonitorService extends Service {
         }
 
     private void sendUiTick(long elapsedMinutes, int limitMinutes) {
-        Intent tick = new Intent("com.example.alertuser.USAGE_TICK");
+        Intent tick = new Intent("com.enerflow.alertuser.USAGE_TICK");
         tick.setPackage(getPackageName());
         tick.putExtra("elapsed", elapsedMinutes);
         tick.putExtra("limit", limitMinutes);

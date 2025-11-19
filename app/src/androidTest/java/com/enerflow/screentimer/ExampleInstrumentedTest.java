@@ -1,4 +1,4 @@
-package com.example.screentimer;
+package com.enerflow.screentimer;
 
 import android.content.Context;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.example.alertuser", appContext.getPackageName());
+        assertEquals("com.enerflow.alertuser", appContext.getPackageName());
     }
 }

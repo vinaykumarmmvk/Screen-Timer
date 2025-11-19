@@ -1,4 +1,4 @@
-package com.example.screentimer;
+package com.enerflow.screentimer;
 
 import android.app.Service;
 import android.content.Intent;

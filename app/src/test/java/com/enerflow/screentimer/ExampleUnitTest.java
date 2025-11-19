@@ -1,4 +1,4 @@
-package com.example.screentimer;
+package com.enerflow.screentimer;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package com.example.screentimer;
+package com.enerflow.screentimer;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -89,7 +89,7 @@ public class TimerActivity extends AppCompatActivity {
 
     @Override protected void onStart() {
         super.onStart();
-        registerReceiver(usageTickReceiver, new android.content.IntentFilter("com.example.alertuser.USAGE_TICK"));
+        registerReceiver(usageTickReceiver, new android.content.IntentFilter("com.enerflow.alertuser.USAGE_TICK"));
     }
 
     @Override protected void onStop() {
