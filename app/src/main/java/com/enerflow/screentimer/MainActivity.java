@@ -1,12 +1,16 @@
 package com.enerflow.screentimer;
 
+import static androidx.core.app.ServiceCompat.startForeground;
+
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -20,6 +24,8 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -138,6 +144,22 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
         }
+
+        View root = findViewById(R.id.root);                  // outermost container
+        View content = findViewById(R.id.contentContainer);   // the block to nudge down
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            int topBars = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            int extra = getResources().getDimensionPixelSize(R.dimen.top_extra_gap);
+            // Add real status-bar height + your extra gap
+            content.setPaddingRelative(
+                    content.getPaddingStart(),
+                    topBars + extra,
+                    content.getPaddingEnd(),
+                    content.getPaddingBottom()
+            );
+            return insets; // don't consume; just apply padding
+        });
 
         timerEditText = findViewById(R.id.editTextTimer);
         btnStart = findViewById(R.id.btnStart);

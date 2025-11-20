@@ -2,10 +2,10 @@
     <!-- Image layer -->
     <item>
         <bitmap
-            android:src="@drawable/ic_testtime1"
-            android:gravity="clip_vertical"
+            android:src="@drawable/clock_shifted_lower"
             android:alpha="0.5"/>
     </item>
+
 
     <!-- Top-to-bottom gradient overlay -->
     <item>

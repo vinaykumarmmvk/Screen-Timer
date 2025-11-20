@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -57,7 +58,14 @@ public class UsageMonitorService extends Service {
                 .setContentText("Screen timer app is running in background")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .build();
-        startForeground(1, notification);
+        if (Build.VERSION.SDK_INT >= 34) {
+            startForeground(
+                    1, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            );
+        } else {
+            startForeground(1, notification);
+        }
 
         return START_STICKY;
     }
@@ -124,47 +132,53 @@ public class UsageMonitorService extends Service {
     }
 
     private void registerScreenReceiver() {
-            screenReceiver = new BroadcastReceiver() {
-                @Override public void onReceive(Context ctx, Intent intent) {
-                    SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-                    SharedPreferences.Editor ed = prefs.edit();
-                    String a = intent.getAction();
+        screenReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context ctx, Intent intent) {
+                SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor ed = prefs.edit();
+                String a = intent.getAction();
 
-                    if (Intent.ACTION_SCREEN_OFF.equals(a)) {
-                        isScreenOn = false;
+                if (Intent.ACTION_SCREEN_OFF.equals(a)) {
+                    isScreenOn = false;
 
-                        // Reset timer state
-                        startTime = System.currentTimeMillis();   // so next ON starts fresh
-                        lastBroadcastMinute = -1;                 // reset throttle
-                        ed.putBoolean("screen_on", false);
-                        ed.putLong("elapsed_time", 0L);           // true counter reset
-                        ed.putLong("ui_elapsed", 0L);             // UI snapshot = 0
-                        ed.apply();
+                    // Reset timer state
+                    startTime = System.currentTimeMillis();   // so next ON starts fresh
+                    lastBroadcastMinute = -1;                 // reset throttle
+                    ed.putBoolean("screen_on", false);
+                    ed.putLong("elapsed_time", 0L);           // true counter reset
+                    ed.putLong("ui_elapsed", 0L);             // UI snapshot = 0
+                    ed.apply();
 
-                        // Push 0 to the Activity immediately
-                        sendUiTick(0L, prefs.getInt("TIMER_MINUTES", 1));
+                    // Push 0 to the Activity immediately
+                    sendUiTick(0L, prefs.getInt("TIMER_MINUTES", 1));
 
-                    } else if (Intent.ACTION_SCREEN_ON.equals(a)) {
-                        isScreenOn = true;
+                } else if (Intent.ACTION_SCREEN_ON.equals(a)) {
+                    isScreenOn = true;
 
-                        // Start fresh from 0 on every screen-on
-                        startTime = System.currentTimeMillis();
-                        lastBroadcastMinute = -1;
-                        ed.putBoolean("screen_on", true);
-                        ed.putLong("elapsed_time", 0L);
-                        ed.putLong("ui_elapsed", 0L);
-                        ed.apply();
+                    // Start fresh from 0 on every screen-on
+                    startTime = System.currentTimeMillis();
+                    lastBroadcastMinute = -1;
+                    ed.putBoolean("screen_on", true);
+                    ed.putLong("elapsed_time", 0L);
+                    ed.putLong("ui_elapsed", 0L);
+                    ed.apply();
 
-                        // Let UI know we’re starting from 0
-                        sendUiTick(0L, prefs.getInt("TIMER_MINUTES", 1));
-                    }
+                    // Let UI know we’re starting from 0
+                    sendUiTick(0L, prefs.getInt("TIMER_MINUTES", 1));
                 }
-            };
-            IntentFilter f = new IntentFilter();
-            f.addAction(Intent.ACTION_SCREEN_OFF);
-            f.addAction(Intent.ACTION_SCREEN_ON);
-            registerReceiver(screenReceiver, f);
+            }
+        };
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(screenReceiver, filter);
         }
+
+    }
 
     private void sendUiTick(long elapsedMinutes, int limitMinutes) {
         Intent tick = new Intent("com.enerflow.alertuser.USAGE_TICK");

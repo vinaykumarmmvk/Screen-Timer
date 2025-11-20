@@ -1,11 +1,13 @@
 package com.enerflow.screentimer;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -17,6 +19,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -59,6 +63,22 @@ public class TimerActivity extends AppCompatActivity {
         textViewCount = findViewById(R.id.textViewCount);
         progress = findViewById(R.id.progress);
 
+        View root = findViewById(R.id.root);                  // outermost container
+        View content = findViewById(R.id.contentContainer);   // the block to nudge down
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            int topBars = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            int extra = getResources().getDimensionPixelSize(R.dimen.top_extra_gap);
+            // Add real status-bar height + your extra gap
+            content.setPaddingRelative(
+                    content.getPaddingStart(),
+                    topBars + extra,
+                    content.getPaddingEnd(),
+                    content.getPaddingBottom()
+            );
+            return insets; // don't consume; just apply padding
+        });
+
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -89,7 +109,12 @@ public class TimerActivity extends AppCompatActivity {
 
     @Override protected void onStart() {
         super.onStart();
-        registerReceiver(usageTickReceiver, new android.content.IntentFilter("com.enerflow.alertuser.USAGE_TICK"));
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(usageTickReceiver, new android.content.IntentFilter("com.enerflow.alertuser.USAGE_TICK") , Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(usageTickReceiver, new android.content.IntentFilter("com.enerflow.alertuser.USAGE_TICK"));
+        }
+
     }
 
     @Override protected void onStop() {
