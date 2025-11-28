@@ -48,11 +48,6 @@ public class UsageMonitorService extends Service {
             return START_NOT_STICKY; // Don't proceed with time checking
         }
 
-        handler = new Handler();
-
-        startTimer();
-        registerScreenReceiver();
-
         Notification notification = new NotificationCompat.Builder(this, "UsageMonitorChannel")
                 .setContentTitle("Monitoring Screen Usage")
                 .setContentText("Screen timer app is running in background")
@@ -66,6 +61,11 @@ public class UsageMonitorService extends Service {
         } else {
             startForeground(1, notification);
         }
+
+        handler = new Handler();
+
+        startTimer();
+        registerScreenReceiver();
 
         return START_STICKY;
     }
