@@ -27,8 +27,8 @@ public class UsageMonitorService extends Service {
     private int timerLimit;
     private long startTime;
     private int exceedCount = 0;
-
     private BroadcastReceiver screenReceiver;
+    private long lastBroadcastSecond = -1;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -100,15 +100,22 @@ public class UsageMonitorService extends Service {
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 long elapsedMinutes = elapsedTime / (1000 * 60);
 
+                long elapsedSec = elapsedTime / 1000L;
+
                 Log.d("OverlayService", "Elapsed time: " + elapsedMinutes + " minutes (Limit: " + timerLimit + ")");
+
+                editor.putLong("elapsed_time_sec", elapsedSec).apply();
 
                 editor.putLong("elapsed_time", elapsedMinutes).apply();
 
-                // Broadcast once per minute (throttled)
-                if (elapsedMinutes != lastBroadcastMinute) {
-                    lastBroadcastMinute = elapsedMinutes;
-                    editor.putLong("ui_elapsed", elapsedMinutes).apply();
-                    sendUiTick(elapsedMinutes, timerLimit);
+                // broadcast once per second
+                if (elapsedSec != lastBroadcastSecond) {
+                    lastBroadcastSecond = elapsedSec;
+                    getSharedPreferences("AppPrefs", MODE_PRIVATE)
+                            .edit()
+                            .putLong("ui_elapsed_sec", elapsedSec)
+                            .apply();
+                    sendUiTick(elapsedSec, timerLimit);
                 }
 
                 if (elapsedMinutes >= timerLimit) {
@@ -119,8 +126,9 @@ public class UsageMonitorService extends Service {
 
                     // Reset timer for the next cycle
                     startTime = System.currentTimeMillis();
-                    lastBroadcastMinute = -1;
-                    editor.putLong("elapsed_time", 0L).putLong("ui_elapsed", 0L).apply();
+                    lastBroadcastSecond = -1;
+
+                    editor.putLong("elapsed_time_sec", 0L).putLong("ui_elapsed_sec", 0L).apply();
                     sendUiTick(0L, timerLimit);
                 }
 
@@ -180,10 +188,10 @@ public class UsageMonitorService extends Service {
 
     }
 
-    private void sendUiTick(long elapsedMinutes, int limitMinutes) {
+    private void sendUiTick(long elapsedSec, int limitMinutes) {
         Intent tick = new Intent("com.enerflow.alertuser.USAGE_TICK");
         tick.setPackage(getPackageName());
-        tick.putExtra("elapsed", elapsedMinutes);
+        tick.putExtra("elapsedSec", elapsedSec);
         tick.putExtra("limit", limitMinutes);
         sendBroadcast(tick);
     }

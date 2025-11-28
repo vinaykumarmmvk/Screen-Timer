@@ -31,9 +31,9 @@ public class TimerActivity extends AppCompatActivity {
 
     private final android.content.BroadcastReceiver usageTickReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
-            long elapsed = intent.getLongExtra("elapsed", 0L);
+            long elapsedSec = intent.getLongExtra("elapsedSec", 0L);
             int limit = intent.getIntExtra("limit", 1);
-            updateTimerUI(elapsed, limit);
+            updateTimerUI(elapsedSec, limit);
         }
     };
 
@@ -46,7 +46,7 @@ public class TimerActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         int limit = Math.max(1, prefs.getInt("TIMER_MINUTES", 1));
         boolean screenOn = prefs.getBoolean("screen_on", true);
-        long uiElapsed = prefs.getLong("ui_elapsed", 0L);
+        long uiElapsed = prefs.getLong("ui_elapsed_sec", 0L);
         // Paint using the snapshot persisted by the service
         updateTimerUI(screenOn ? uiElapsed : 0L, limit);
     }
@@ -123,27 +123,33 @@ public class TimerActivity extends AppCompatActivity {
     }
 
 
-    private void updateTimerUI(long elapsedMinutes, int limitMinutes) {
+    private void updateTimerUI(long elapsedSec, int limitMinutes) {
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         int count = prefs.getInt("count", 0);
 
-        // Clamp + avoid divide by zero
         if (limitMinutes <= 0) limitMinutes = 1;
 
-        // Update "elapsed" text — choose your preferred format ("Xm" or just number)
-        textViewCurrTimer.setText(elapsedMinutes + "min");
+        // 1) Show mm:ss (or hh:mm:ss if long)
+        textViewCurrTimer.setText(formatElapsed(elapsedSec));
         textViewCount.setText(String.valueOf(count));
 
-        // Compute percent and update progress
-        float pct = (elapsedMinutes * 100f) / limitMinutes;
-        int progressPct = Math.max(0, Math.min(100, Math.round(pct)));
+        // 2) Smooth progress using seconds
+        float totalSec = limitMinutes * 60f;
+        int pct = Math.max(0, Math.min(100, Math.round((elapsedSec / totalSec) * 100f)));
 
-        // Make sure it's determinate and max=100
         if (progress.isIndeterminate()) progress.setIndeterminate(false);
         if (progress.getMax() != 100) progress.setMax(100);
-
-        progress.setProgress(progressPct, true); // true = animate
+        progress.setProgress(pct, true);
     }
+
+    private String formatElapsed(long sec) {
+        long h = sec / 3600;
+        long m = (sec % 3600) / 60;
+        long s = sec % 60;
+        if (h > 0) return String.format(java.util.Locale.getDefault(), "%d:%02d:%02d", h, m, s);
+        return String.format(java.util.Locale.getDefault(), "%d:%02d", m, s);
+    }
+
 
 
     @Override
