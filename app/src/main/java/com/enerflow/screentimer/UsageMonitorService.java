@@ -37,6 +37,7 @@ public class UsageMonitorService extends Service {
         timerLimit = prefs.getInt("TIMER_MINUTES", 15);  // default to 15 if not set
         boolean isTimerEnabled = prefs.getBoolean("timer_enabled", true); // default is true
 
+        createNotificationChannel();
         //timerLimit = intent.getIntExtra("TIMER_MINUTES", 1);
 
         Log.d("OverlayService", "Timer limit set to: " + timerLimit + " minutes");
@@ -52,7 +53,6 @@ public class UsageMonitorService extends Service {
         startTimer();
         registerScreenReceiver();
 
-        createNotificationChannel();
         Notification notification = new NotificationCompat.Builder(this, "UsageMonitorChannel")
                 .setContentTitle("Monitoring Screen Usage")
                 .setContentText("Screen timer app is running in background")

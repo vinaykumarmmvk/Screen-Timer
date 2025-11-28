@@ -100,14 +100,16 @@
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
                         android:inputType="number"
-                        android:text="30"
+                        android:text="5"
                         android:textStyle="bold"
                         android:textColor="#273142"
                         android:textSize="20sp"
                         android:gravity="center"
                         android:paddingHorizontal="10dp"
                         android:paddingVertical="2dp"
-                        android:background="@android:color/transparent" />
+                        android:imeOptions="actionDone"
+                        android:selectAllOnFocus="true"
+                        android:background="@android:color/transparent"/>
 
                     <!-- divider -->
                     <View
