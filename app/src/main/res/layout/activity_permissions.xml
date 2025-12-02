@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_dialog_card"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:text="Allow required permissions"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#1A1A1A"/>
+
+    <TextView
+        android:id="@+id/tvWhy"
+        android:text="We need:\n• Appear on top – to show the reminder popup\n• Usage access – to measure screen time"
+        android:layout_marginTop="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#1A1A1A"/>
+
+    <!-- Status rows -->
+    <TextView
+        android:id="@+id/tvOverlayStatus"
+        android:text="Overlay: ❌ Not granted"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#1A1A1A"/>
+
+    <TextView
+        android:id="@+id/tvUsageStatus"
+        android:text="Usage access: ❌ Not granted"
+        android:layout_marginTop="8dp"
+        android:textSize="16sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#1A1A1A"/>
+
+
+    <Button
+        android:id="@+id/btnGrant"
+        android:text="Grant required permissions"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:textAllCaps="false"
+        android:layout_marginTop="24dp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:background="@drawable/bg_dialog_button" />
+</LinearLayout>

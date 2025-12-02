@@ -4,8 +4,10 @@ import static androidx.core.app.ServiceCompat.startForeground;
 
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        startFlowOrRunApp();
         getSharedPreferences("app_prefs", MODE_PRIVATE)
                 .edit().putString("last_screen", "MAIN").apply();
     }
@@ -121,6 +124,31 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+
+    private boolean hasAllCriticalPermissions() {
+        // same logic as in PermissionsActivity (or reuse a small util)
+        return Settings.canDrawOverlays(this) && hasUsageAccessPermission();
+    }
+
+    private boolean hasUsageAccessPermission() {
+        AppOpsManager aom = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
+        int mode = aom.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), getPackageName());
+        if (mode == AppOpsManager.MODE_DEFAULT) {
+            return checkSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+        return mode == AppOpsManager.MODE_ALLOWED;
+    }
+
+    private void startFlowOrRunApp() {
+        if (!hasAllCriticalPermissions()) {
+            startActivity(new Intent(this, PermissionsActivity.class));
+            return;
+        }
+        // ✅ both granted → proceed (start service/timer etc.)
     }
 
 
@@ -232,8 +260,8 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (!hasUsageAccessPermission()) {
-                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-                return;
+                startFlowOrRunApp();
+                //startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
             }
 
             Intent intent = new Intent(this, UsageMonitorService.class);
@@ -264,12 +292,12 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private boolean hasUsageAccessPermission() {
+    /*private boolean hasUsageAccessPermission() {
         AppOpsManager appOps = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
         int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                 android.os.Process.myUid(), getPackageName());
         return mode == AppOpsManager.MODE_ALLOWED;
-    }
+    }*/
 
     private int parseTimer() {
         String s = timerEditText.getText().toString().trim();
