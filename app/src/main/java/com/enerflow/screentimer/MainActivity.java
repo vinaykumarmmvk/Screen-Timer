@@ -26,6 +26,8 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
@@ -39,6 +41,21 @@ public class MainActivity extends AppCompatActivity {
     TextView aboutDeveloper, btnMinus, btnPlus;
     CheckBox cbAddNote;
     ImageButton btnInfo;
+    // add in MainActivity fields:
+    private android.app.Dialog permissionsDialog;
+    private View dialogView;
+    private boolean pendingAutoProgress = false;
+
+    private void openOverlaySettings() {
+        Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + getPackageName()));
+        startActivity(i);
+    }
+
+    private void openUsageAccessSettings() {
+        Intent i = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+        startActivity(i);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -50,6 +67,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         startFlowOrRunApp();
+        // refresh the dialog if it's open
+        if (permissionsDialog != null && permissionsDialog.isShowing() && dialogView != null) {
+            TextView tvOverlay = dialogView.findViewById(R.id.tvOverlayStatus);
+            TextView tvUsage   = dialogView.findViewById(R.id.tvUsageStatus);
+            updatePermissionStatuses(tvOverlay, tvUsage);
+
+            if (pendingAutoProgress && !hasAllCriticalPermissions()) {
+                proceedPermissions(tvOverlay, tvUsage);
+            } else if (hasAllCriticalPermissions()) {
+                pendingAutoProgress = false;
+                permissionsDialog.dismiss();
+                onPermissionsReady();
+            }
+        }
+
         getSharedPreferences("app_prefs", MODE_PRIVATE)
                 .edit().putString("last_screen", "MAIN").apply();
     }
@@ -145,10 +177,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void startFlowOrRunApp() {
         if (!hasAllCriticalPermissions()) {
-            startActivity(new Intent(this, PermissionsActivity.class));
+            showPermissionsDialog();
             return;
         }
-        // ✅ both granted → proceed (start service/timer etc.)
     }
 
 
@@ -252,17 +283,11 @@ public class MainActivity extends AppCompatActivity {
             else
                 editor.putBoolean("isUserQuote", false).apply();
 
-            if (!Settings.canDrawOverlays(this)) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
+            if (!hasAllCriticalPermissions()) {
+                showPermissionsDialog();
                 return;
             }
 
-            if (!hasUsageAccessPermission()) {
-                startFlowOrRunApp();
-                //startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-            }
 
             Intent intent = new Intent(this, UsageMonitorService.class);
             int minutes = 0;
@@ -274,7 +299,8 @@ public class MainActivity extends AppCompatActivity {
                 //textViewTimer.setText(minutes + " minute/s");
                 editor.putBoolean("timer_enabled", true).apply();
                 Toast.makeText(getApplicationContext(), "Notify screen timer enabled!", Toast.LENGTH_LONG).show();
-                startForegroundService(intent);
+                ContextCompat.startForegroundService(this, new Intent(this, UsageMonitorService.class));
+
                 Intent i = new Intent(MainActivity.this, TimerActivity.class);
                 startActivity(i);
                 finish();
@@ -292,12 +318,62 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    /*private boolean hasUsageAccessPermission() {
-        AppOpsManager appOps = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
-        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(), getPackageName());
-        return mode == AppOpsManager.MODE_ALLOWED;
-    }*/
+    private void showPermissionsDialog() {
+        if (permissionsDialog != null && permissionsDialog.isShowing()) return;
+
+        dialogView = getLayoutInflater().inflate(R.layout.activity_permissions, null, false);
+
+        TextView tvOverlay = dialogView.findViewById(R.id.tvOverlayStatus);
+        TextView tvUsage   = dialogView.findViewById(R.id.tvUsageStatus);
+        Button btnGrant    = dialogView.findViewById(R.id.btnGrant);
+
+        btnGrant.setOnClickListener(v -> proceedPermissions(tvOverlay, tvUsage));
+
+        permissionsDialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        // optional nice background if your layout card has rounded corners
+        if (permissionsDialog.getWindow() != null) {
+            permissionsDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        permissionsDialog.show();
+        updatePermissionStatuses(tvOverlay, tvUsage);
+    }
+
+    private void updatePermissionStatuses(TextView tvOverlay, TextView tvUsage) {
+        tvOverlay.setText(Settings.canDrawOverlays(this)
+                ? "Overlay: ✅ Granted" : "Overlay: ❌ Not granted");
+        tvUsage.setText(hasUsageAccessPermission()
+                ? "Usage access: ✅ Granted" : "Usage access: ❌ Not granted");
+    }
+
+    private void proceedPermissions(TextView tvOverlay, TextView tvUsage) {
+        if (!Settings.canDrawOverlays(this)) {
+            pendingAutoProgress = true;
+            openOverlaySettings();
+            return;
+        }
+        if (!hasUsageAccessPermission()) {
+            pendingAutoProgress = true;
+            openUsageAccessSettings();
+            return;
+        }
+        // Both granted
+        pendingAutoProgress = false;
+        if (permissionsDialog != null && permissionsDialog.isShowing()) permissionsDialog.dismiss();
+        onPermissionsReady();
+    }
+
+    private void onPermissionsReady() {
+        // Called when both permissions are granted.
+        // If you want to immediately start your flow from here you can:
+        // e.g., simulate the same logic you run inside btnStart click,
+        // or just return and let the user press Start.
+    }
+
 
     private int parseTimer() {
         String s = timerEditText.getText().toString().trim();

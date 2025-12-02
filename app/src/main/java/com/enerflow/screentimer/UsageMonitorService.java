@@ -48,19 +48,25 @@ public class UsageMonitorService extends Service {
             return START_NOT_STICKY; // Don't proceed with time checking
         }
 
-        Notification notification = new NotificationCompat.Builder(this, "UsageMonitorChannel")
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, "UsageMonitorChannel")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Monitoring Screen Usage")
                 .setContentText("Screen timer app is running in background")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .build();
+                .setOngoing(true);
+
+// ↓ Android 12+ (API 31): show now, don't defer up to 10s
+        if (Build.VERSION.SDK_INT >= 31) {
+            b.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE);
+        }
+
+        Notification notification = b.build();
+
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(
-                    1, notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            );
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         } else {
             startForeground(1, notification);
         }
+
 
         handler = new Handler();
 
@@ -201,7 +207,7 @@ public class UsageMonitorService extends Service {
             NotificationChannel serviceChannel = new NotificationChannel(
                     "UsageMonitorChannel",
                     "Usage Monitor Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT);
+                    NotificationManager.IMPORTANCE_LOW);
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(serviceChannel);
         }
